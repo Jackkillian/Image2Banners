@@ -25,15 +25,12 @@ app.whenReady().then(() => {
   if (!app.isPackaged) {
     pythonProcess = spawn("python", ["-u", "app.py"], { detached: false });
   } else {
-    const backendPath =
-      process.platform === "win32"
-        ? path.join(__dirname, "dist", "app.exe")
-        : path.join(__dirname, "dist", "app");
-    pythonProcess = spawn(
-      backendPath,
-      [process.platform === "win32" ? "app.exe" : "app"],
-      { detached: false },
+    const backendPath = path.join(
+      process.resourcesPath,
+      "python",
+      process.platform === "win32" ? "app.exe" : "app",
     );
+    pythonProcess = spawn(backendPath, [], { detached: false });
   }
 
   pythonProcess.stderr.on("data", (data) => {
@@ -249,6 +246,6 @@ app.whenReady().then(() => {
 app.on("before-quit", () => {
   pythonProcess.stdin.write('{"operation": "close"}' + "\n");
   if (pythonProcess && !pythonProcess.killed) {
-    spawn("taskkill", ["/PID", pythonProcess.pid, "/T", "/F"]);
+    pythonProcess.kill();
   }
 });

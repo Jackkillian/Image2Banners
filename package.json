@@ -17,5 +17,50 @@
   "dependencies": {
     "image-size": "^1.1.1",
     "ps-tree": "^1.2.0"
+  },
+  "build": {
+    "appId": "com.marsteam.image2banners",
+    "productName": "Image2Banners",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "**/*",
+      "!**/*.py",
+      "!*.spec",
+      "!requirements.txt",
+      "!build.sh",
+      "!build.bat",
+      "!dist/**/*",
+      "!release/**/*",
+      "!.git*",
+      "!.vscode",
+      "!.idea"
+    ],
+    "extraResources": [
+      {
+        "from": "dist/",
+        "to": "python"
+      },
+      {
+        "from": "assets",
+        "to": "python/assets"
+      },
+      {
+        "from": "lang",
+        "to": "python/lang"
+      }
+    ],
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    }
   }
 }
