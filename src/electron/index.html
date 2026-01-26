@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="
+            default-src 'self';
+            script-src 'self' 'unsafe-inline';
+            style-src 'self' 'unsafe-inline';
+            img-src 'self' data:;
+            font-src 'self';
+            connect-src 'self' https://raw.githubusercontent.com;
+            object-src 'none';
+            base-uri 'none';
+            form-action 'none';
+        "
+        />
+        <title>Image2Banners</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <div class="header">
+            <div class="i2b">
+                <img id="i2b-logo" style="margin-right: 8px" width="35px" />
+                <h1 style="margin: 0px">Image2Banners</h1>
+            </div>
+            <div class="links">
+                <a class="link" href="https://youtube.com/@MARSTeamMC"
+                    ><img id="yt-logo" width="38px"
+                /></a>
+                <a class="link" href="https://x.com/MARSTeamMC"
+                    ><img id="tw-logo" width="38px"
+                /></a>
+                <a class="link" href="https://github.com/MARSTeamMC"
+                    ><img id="gth-logo" width="38px"
+                /></a>
+                <a class="link" href="https://discord.gg/bYXrZ7aQWn"
+                    ><img id="ds-logo" width="38px"
+                /></a>
+            </div>
+            <div class="dropdown">
+                <button class="button dropbtn" id="language">Language</button>
+                <div class="dropdown-content"></div>
+            </div>
+        </div>
+        <div class="both-sides">
+            <div class="left-side">
+                <div id="images"></div>
+                <div class="imgDiv">
+                    <div class="json-div">
+                        <h1 id="jsonSelected" style="font-size: 3em">
+                            JSON Selected
+                        </h1>
+                    </div>
+                    <img width="100%" id="imagePreview" alt="Selected Image" />
+                </div>
+                <div class="imageSelector">
+                    <button class="button" id="selectFileButton">
+                        Select Image / JSON
+                    </button>
+                    <div class="resolution">
+                        <input class="width" type="number" />
+                        <span>x</span>
+                        <input class="height" type="number" />
+                    </div>
+                </div>
+                <div class="progressBar">
+                    <div id="loading_0" class="unLoaded">Loading...</div>
+                    <div id="loading_1" class="loaded">Loading...</div>
+                </div>
+                <div class="saveButtons">
+                    <button id="saveAsImg" class="saveButton">
+                        Save As Image
+                    </button>
+                    <div class="saveAsImgDiv">
+                        <span
+                            id="saveAsImgDesc"
+                            style="width: -webkit-fill-available"
+                            >saveAsImgDesc</span
+                        >
+                    </div>
+                    <button
+                        id="saveAsJSON"
+                        style="margin-left: 8px"
+                        class="saveButton"
+                    >
+                        Save As Json
+                    </button>
+                    <div class="saveAsJSONDiv">
+                        <span
+                            id="saveAsJSONDesc"
+                            style="width: -webkit-fill-available"
+                            >saveAsJSONDesc</span
+                        >
+                    </div>
+                    <button
+                        id="saveAsNBT"
+                        style="margin-left: 8px"
+                        class="saveButton"
+                    >
+                        Save As NBT
+                    </button>
+                    <div class="saveAsNBTDiv">
+                        <span
+                            id="saveAsNBTDesc"
+                            style="width: -webkit-fill-available"
+                            >saveAsNBTDesc</span
+                        >
+                    </div>
+                </div>
+            </div>
+            <div class="right-side">
+                <div class="giveCommand">
+                    <span id="giveCommand" class="descriptionCheckbox"
+                        >Command to obtain a banner:</span
+                    >
+                    <small>/give @p minecraft:banner</small>
+                </div>
+                <div class="settings">
+                    <div class="settings-sub"></div>
+                    <div style="margin-top: 0px" class="settingCheckbox">
+                        <div class="descriptionCheckbox">
+                            <span
+                                id="generateBlocks"
+                                class="descriptionCheckbox"
+                                >Generate Blocks</span
+                            >
+                            <small id="generateBlocksDesc"
+                                >Generate blocks behind banners?</small
+                            >
+                        </div>
+                        <label>
+                            <input type="checkbox" checked />
+                            <div class="toggle"></div>
+                        </label>
+                    </div>
+                    <div class="settingCheckbox">
+                        <div class="descriptionCheckbox">
+                            <span id="generateLayeredBanners"
+                                >Generate Layered Banners</span
+                            >
+                            <small id="generateLayeredBannersDesc"
+                                >Generate banners that will appear behind the
+                                lower part of the banner?</small
+                            >
+                        </div>
+                        <label>
+                            <input type="checkbox" checked />
+                            <div class="toggle"></div>
+                        </label>
+                    </div>
+                    <div class="settingCheckbox">
+                        <div class="descriptionCheckbox">
+                            <span id="generateComplexBanners"
+                                >Generate Banners With 6+ Patterns</span
+                            >
+                            <small id="generateComplexBannersDesc"
+                                >Should banners with more than 6 patterns be
+                                generated? They can't be crafted, only obtained
+                                through commands.</small
+                            >
+                        </div>
+                        <label>
+                            <input type="checkbox" />
+                            <div class="toggle"></div>
+                        </label>
+                    </div>
+                    <div class="settingCheckbox">
+                        <div class="descriptionCheckbox">
+                            <span id="usePatternItems">Use Pattern Items</span>
+                            <small id="usePatternItemsDesc"
+                                >Can banners use pattern items, such as the
+                                thing, globe, etc.?</small
+                            >
+                        </div>
+                        <label>
+                            <input type="checkbox" />
+                            <div class="toggle"></div>
+                        </label>
+                    </div>
+                    <div class="settingRange">
+                        <div class="descriptionRange">
+                            <span id="threadsCount" class="descriptionRange"
+                                >Threads Count</span
+                            >
+                            <small id="threadsCountDesc"
+                                >The number of threads a program can use.</small
+                            >
+                        </div>
+                        <div class="range">
+                            <input
+                                type="range"
+                                id="threadsRange"
+                                class="slider"
+                                min="1"
+                                max="1"
+                                value="1"
+                                oninput="
+                                    this.nextElementSibling.value = this.value
+                                "
+                            />
+                            <input
+                                type="number"
+                                id="threadsNumber"
+                                class="slider-value sliderNumber"
+                                value="1"
+                                step="1"
+                                max="1"
+                                oninput="
+                                    this.previousElementSibling.value =
+                                        this.value
+                                "
+                            />
+                        </div>
+                        <div class="rangeNums">
+                            <small>1</small>
+                            <small id="maxThreadsRange">1</small>
+                        </div>
+                    </div>
+                    <div class="settingRange">
+                        <div class="descriptionRange">
+                            <span id="compareMethod" class="descriptionRange"
+                                >Compare Method</span
+                            >
+                            <small id="compareMethodDesc"
+                                >How strong will the new method of comparing
+                                images be over the old one? (Recommended value:
+                                90)</small
+                            >
+                        </div>
+                        <div class="range">
+                            <input
+                                type="range"
+                                id="compareMethodRange"
+                                class="slider"
+                                min="0"
+                                max="100"
+                                value="90"
+                                step="1"
+                                oninput="
+                                    this.nextElementSibling.value = this.value
+                                "
+                            />
+                            <input
+                                type="number"
+                                id="compareMethodNumber"
+                                class="slider-value sliderNumber"
+                                value="90"
+                                step="1"
+                                max="100"
+                                oninput="
+                                    this.previousElementSibling.value =
+                                        this.value
+                                "
+                            />
+                        </div>
+                        <div class="rangeNums">
+                            <small>0</small>
+                            <small>100</small>
+                        </div>
+                    </div>
+
+                    <div class="craftBanners">
+                        <div class="bannerAndBlock">
+                            <div class="BannerInfo">
+                                <p style="margin: 0px">Banner</p>
+                                <img id="bannerImage" width="100%" alt="" />
+                            </div>
+                            <div class="BlockInfo">
+                                <p style="margin: 0px; height: 55px">-</p>
+                                <img
+                                    style="max-width: 100px"
+                                    width="100%"
+                                    alt=""
+                                />
+                            </div>
+                        </div>
+                        <div class="craftStep" id="craftStepSample">
+                            <div class="BannerInfo">
+                                <p style="margin: 0px; height: 55px"></p>
+                                <img
+                                    id="craftBannerImage"
+                                    width="100%"
+                                    alt=""
+                                />
+                            </div>
+                            <div class="BannerInfo">
+                                <p
+                                    id="BannerInfoAdd"
+                                    style="margin: 0px; height: 54px"
+                                >
+                                    -
+                                </p>
+                                <img id="bannerInfoImage" width="100%" alt="" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="craftBannersCoords">
+                    <span id="bannerCoords" class="descriptionCheckbox"
+                        >Select the coordinates of the banner you want to
+                        craft.</span
+                    >
+                    <div class="coords">
+                        <input
+                            id="x_coord"
+                            type="number"
+                            min="0"
+                            max="0"
+                            value="0"
+                        />
+                        <span>x</span>
+                        <input
+                            id="y_coord"
+                            type="number"
+                            min="0"
+                            max="0"
+                            value="0"
+                        />
+                    </div>
+                </div>
+                <div class="bottomButtons">
+                    <button id="generateBanners" class="button">
+                        Generate Banners
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script src="setupImages.js"></script>
+        <script src="setupCallbacks.js"></script>
+        <script src="lang.js"></script>
+    </body>
+</html>

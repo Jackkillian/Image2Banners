@@ -6,7 +6,15 @@
   "version": "2.3.0",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron src/electron/main.js",
+    "clean": "rm -rf dist release node_modules/.cache",
+    "install-deps": "pip3 install -r backend/requirements.txt && npm install",
+    "build:python": "pyinstaller app.spec",
+    "build:electron": "electron-builder",
+    "build": "npm run build:python && npm run build:electron",
+    "build:mac": "npm run build:python && electron-builder --mac",
+    "build:win": "npm run build:python && electron-builder --win",
+    "rebuild": "npm run clean && npm run install-deps && npm run build"
   },
   "keywords": [],
   "license": "BSD 2-Clause",
@@ -25,7 +33,8 @@
       "output": "release"
     },
     "files": [
-      "**/*",
+      "assets/**/*",
+      "lang/**/*",
       "!**/*.py",
       "!*.spec",
       "!requirements.txt",

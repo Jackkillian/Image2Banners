@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['app.py'],
+    ["src/backend/app.py"],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[("src/resources/assets/**/*", "assets")],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -22,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='app',
+    name="app",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

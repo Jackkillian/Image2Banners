@@ -11,4 +11,7 @@ def is_running_through_pyinstaller():
 
 
 def get_assets_folder():
-    return "assets"
+    if is_running_through_pyinstaller():
+        return "assets"
+    else:
+        return "src/resources/assets"

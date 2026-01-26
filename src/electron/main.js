@@ -3,7 +3,11 @@ const { spawn } = require("child_process");
 const path = require("path");
 const { imageSize } = require("image-size");
 const fs = require("fs");
-const { platform } = require("node:process");
+const {
+  getPythonBackendPath,
+  getSrcPath,
+  getResourcePath,
+} = require("./utils");
 
 let mainWindow;
 let pythonProcess;
@@ -14,23 +18,21 @@ app.whenReady().then(() => {
     height: 669,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false,
+      contextIsolation: true,
+      preload: getSrcPath("electron/preload.js"),
     },
     autoHideMenuBar: true,
     resizable: true,
   });
 
-  mainWindow.loadFile("index.html");
+  mainWindow.loadFile(path.join(__dirname, "index.html"));
 
   if (!app.isPackaged) {
-    pythonProcess = spawn("python", ["-u", "app.py"], { detached: false });
+    pythonProcess = spawn("python", ["-u", getSrcPath("backend/app.py")], {
+      detached: false,
+    });
   } else {
-    const backendPath = path.join(
-      process.resourcesPath,
-      "python",
-      process.platform === "win32" ? "app.exe" : "app",
-    );
-    pythonProcess = spawn(backendPath, [], { detached: false });
+    pythonProcess = spawn(getPythonBackendPath(), [], { detached: false });
   }
 
   pythonProcess.stderr.on("data", (data) => {
@@ -39,6 +41,10 @@ app.whenReady().then(() => {
 
   pythonProcess.on("close", (code) => {
     console.log(`Python script exited with code ${code}`);
+  });
+
+  ipcMain.handle("get-resource-path", (_event, relativePath) => {
+    return getResourcePath(relativePath);
   });
 
   ipcMain.handle("select-file", async () => {
@@ -112,7 +118,7 @@ app.whenReady().then(() => {
 
       return [fileExtension, filePath];
     }
-    return null;
+    return null
   });
 
   pythonProcess.stdout.on("data", (output) => {
