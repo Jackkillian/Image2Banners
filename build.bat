@@ -1,4 +1,7 @@
 @echo off
+echo Cleaning
+if exist release rmdir /s /q release
+if exist dist rmdir /s /q dist
 
 echo Installing python dependencies
 pip install -r requirements.txt

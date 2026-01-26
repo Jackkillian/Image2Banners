@@ -1,4 +1,8 @@
 #!/bin/bash
+echo Cleaning
+rm -rf release/
+rm -rf dist/
+
 echo Installing python dependencies
 pip3 install -r requirements.txt
 pip3 install pyinstaller
