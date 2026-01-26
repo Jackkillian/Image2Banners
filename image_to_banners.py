@@ -1,18 +1,17 @@
 import base64
 import math
 import os
-import time
-from concurrent.futures import as_completed, ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from io import BytesIO
 from pathlib import Path
 
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw
-from skimage.color import rgb2lab, deltaE_ciede2000
+from skimage.color import deltaE_ciede2000, rgb2lab
 from skimage.metrics import structural_similarity as ssim
 
-from utils import print_with_flush, get_assets_folder
+from utils import get_assets_folder, print_with_flush
 
 colors = {
     "white": [77.76, -1.38, -0.48],
@@ -33,14 +32,32 @@ colors = {
     "black": [7.36, 0.78, -2.09],
 }
 
-pattern_items = ["creeper", "skull", "flower", "mojang", "globe", "piglin", "flow", "guster"]
+pattern_items = [
+    "creeper",
+    "skull",
+    "flower",
+    "mojang",
+    "globe",
+    "piglin",
+    "flow",
+    "guster",
+]
 executor = None
 
 
-def banner_gen(image_path, resolution, gen_blocks, gen_layering, gen_big, use_pattern_items, threads_count, compare_method):
+def banner_gen(
+    image_path,
+    resolution,
+    gen_blocks,
+    gen_layering,
+    gen_big,
+    use_pattern_items,
+    threads_count,
+    compare_method,
+):
     FULL_WIDTH, FULL_HEIGHT = 22, 44
 
-    image = Image.open(image_path).convert('RGBA')
+    image = Image.open(image_path).convert("RGBA")
 
     resolution_width = int(resolution[0])
     resolution_height = int(resolution[1])
@@ -49,30 +66,51 @@ def banner_gen(image_path, resolution, gen_blocks, gen_layering, gen_big, use_pa
     OW, OH = image.size
 
     buffer = BytesIO()
-    image.save(buffer, format="PNG")
+    image.save(buffer, format="PNG", compress_level=0)
     buffer.seek(0)
-    image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
+    image_base64 = base64.b64encode(buffer.read()).decode("utf-8")
     print_with_flush(f"imagePreview|data:image/png;base64,{image_base64}")
 
-    images = [image.crop((w * FULL_WIDTH, h * FULL_HEIGHT - 22, (w + 1) * FULL_WIDTH, (h + 1) * FULL_HEIGHT))
-              for h in range(math.ceil(OH / FULL_HEIGHT))
-              for w in range(OW // FULL_WIDTH)]
+    images = [
+        image.crop(
+            (
+                w * FULL_WIDTH,
+                h * FULL_HEIGHT - 22,
+                (w + 1) * FULL_WIDTH,
+                (h + 1) * FULL_HEIGHT,
+            )
+        )
+        for h in range(math.ceil(OH / FULL_HEIGHT))
+        for w in range(OW // FULL_WIDTH)
+    ]
     image.close()
 
     full = Image.new("RGB", (OW, OH))
 
     best_banners = [i for i in range(len(images))]
 
-    banner_json = {f'({i % resolution_width},{i // resolution_width})': {} for i in
-                   range(resolution_width * resolution_height)}
-    banner_json['resolution'] = resolution
+    banner_json = {
+        f"({i % resolution_width},{i // resolution_width})": {}
+        for i in range(resolution_width * resolution_height)
+    }
+    banner_json["resolution"] = resolution
 
     banner_bar = 0
     global executor
     executor = ProcessPoolExecutor(max_workers=threads_count)
-    futures = [executor.submit(process_image, c, img, gen_blocks, (gen_layering and c >= int(resolution[0])), gen_big,
-                               use_pattern_items, compare_method)
-               for c, img in enumerate(images)]
+    futures = [
+        executor.submit(
+            process_image,
+            c,
+            img,
+            gen_blocks,
+            (gen_layering and c >= int(resolution[0])),
+            gen_big,
+            use_pattern_items,
+            compare_method,
+        )
+        for c, img in enumerate(images)
+    ]
 
     for future in as_completed(futures):
         banner_num = int(future.result()[0])
@@ -80,9 +118,9 @@ def banner_gen(image_path, resolution, gen_blocks, gen_layering, gen_big, use_pa
         banner = future.result()[1]
         best_banners[banner_num] = banner
         buffer = BytesIO()
-        banner.save(buffer, format="PNG")
+        banner.save(buffer, format="PNG", compress_level=0)
         buffer.seek(0)
-        image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
+        image_base64 = base64.b64encode(buffer.read()).decode("utf-8")
         section = future.result()[2]
         x = banner_num % resolution_width
         y = banner_num // resolution_width * 2
@@ -94,30 +132,47 @@ def banner_gen(image_path, resolution, gen_blocks, gen_layering, gen_big, use_pa
         if len(section) == 4:
             banner_json[f"({x},{y - 1})"]["banner"] = section[3]
 
-        print_with_flush(f"bannerPreview{banner_num}|data:image/png;base64,{image_base64}")
-        print_with_flush(f'progressBar_data:{banner_bar}/{len(images)}')
+        print_with_flush(
+            f"bannerPreview{banner_num}|data:image/png;base64,{image_base64}"
+        )
+        print_with_flush(f"progressBar_data:{banner_bar}/{len(images)}")
 
     executor.shutdown()
 
-    for idx, (w, h) in enumerate(((w, h) for h in range(math.ceil(OH / FULL_HEIGHT)) for w in range(OW // FULL_WIDTH))):
-        full.paste(best_banners[idx],
-                   (w * FULL_WIDTH, h * FULL_HEIGHT - 3, (w + 1) * FULL_WIDTH, (h + 1) * FULL_HEIGHT),
-                   best_banners[idx])
+    for idx, (w, h) in enumerate(
+        (
+            (w, h)
+            for h in range(math.ceil(OH / FULL_HEIGHT))
+            for w in range(OW // FULL_WIDTH)
+        )
+    ):
+        full.paste(
+            best_banners[idx],
+            (
+                w * FULL_WIDTH,
+                h * FULL_HEIGHT - 3,
+                (w + 1) * FULL_WIDTH,
+                (h + 1) * FULL_HEIGHT,
+            ),
+            best_banners[idx],
+        )
 
         best_banners[idx].close()
 
     file_name = Path(image_path).stem
 
     buffer = BytesIO()
-    full.save(buffer, format="PNG")
+    full.save(buffer, format="PNG", compress_level=0)
     buffer.seek(0)
-    image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
+    image_base64 = base64.b64encode(buffer.read()).decode("utf-8")
     print_with_flush(f"imagePreview|data:image/png;base64,{image_base64}")
 
     return full, banner_json, file_name
 
 
-def process_image(c, img, gen_blocks, gen_layering, gen_big, use_pattern_items, compare_method):
+def process_image(
+    c, img, gen_blocks, gen_layering, gen_big, use_pattern_items, compare_method
+):
     section = []
 
     main_img = img.crop((0, 22, 22, 66))
@@ -132,22 +187,22 @@ def process_image(c, img, gen_blocks, gen_layering, gen_big, use_pattern_items, 
 
     if gen_blocks:
         img_up = main_img.crop((0, 0, 22, 22))
-        draw = ImageDraw.Draw(img_up)
-        draw.rectangle((1, 2, 20, 22), fill=(0, 0, 0, 255))
+        ImageDraw.Draw(img_up).rectangle((1, 2, 20, 22), fill=(0, 0, 0, 255))
 
         img_down = main_img.crop((0, 22, 22, 44))
-        draw = ImageDraw.Draw(img_down)
-        draw.rectangle((1, 0, 20, 18), fill=(0, 0, 0, 255))
+        ImageDraw.Draw(img_down).rectangle((1, 0, 20, 18), fill=(0, 0, 0, 255))
 
-        img_up_rgb = np.array(img_up.convert('RGB'))
+        img_up_rgb = np.array(img_up.convert("RGB"))
 
-        img_down_rgb = np.array(img_down.convert('RGB'))
+        img_down_rgb = np.array(img_down.convert("RGB"))
 
         img_up.close()
         img_down.close()
 
         block_up_name, block_up = generate_blocks(img_up_rgb, "up", compare_method)
-        block_down_name, block_down = generate_blocks(img_down_rgb, "down", compare_method)
+        block_down_name, block_down = generate_blocks(
+            img_down_rgb, "down", compare_method
+        )
     else:
         block_up_name, block_up = generate_blocks(None, "up", compare_method)
         block_down_name, block_down = generate_blocks(None, "down", compare_method)
@@ -166,10 +221,12 @@ def process_image(c, img, gen_blocks, gen_layering, gen_big, use_pattern_items, 
         img_second_banner = second_img.crop((1, 2, 21, 41))
         second_img.close()
 
-        img_second_banner_rgb = np.array(img_second_banner.convert('RGB'))
+        img_second_banner_rgb = np.array(img_second_banner.convert("RGB"))
         img_second_banner.close()
 
-        second_patterns, second_banner = generate_banner(img_second_banner_rgb, gen_big, use_pattern_items, compare_method)
+        second_patterns, second_banner = generate_banner(
+            img_second_banner_rgb, gen_big, use_pattern_items, compare_method
+        )
         second_banner = second_banner.crop((0, 18, 20, 39))
 
         second_full = full.copy()
@@ -199,16 +256,18 @@ def generate_blocks(image_rgb, part, compare_method):
     best_block = Image.open(path + bvs[0])
 
     for bv in bvs:
-        bv_image = Image.open(path + bv).resize((22, 22), Image.NEAREST).convert('RGBA')
+        bv_image = Image.open(path + bv).resize((22, 22), Image.NEAREST).convert("RGBA")
 
         draw = ImageDraw.Draw(bv_image)
-        if part == 'up':
+        if part == "up":
             draw.rectangle((1, 2, 20, 22), fill=(0, 0, 0, 255))
         else:
             draw.rectangle((1, 0, 20, 18), fill=(0, 0, 0, 255))
 
-        bv_rgb = np.array(bv_image.convert('RGB'))
-        similarity_score = hybrid_similarity(bv_rgb, image_rgb, compare_method, 1-compare_method)
+        bv_rgb = np.array(bv_image.convert("RGB"))
+        similarity_score = hybrid_similarity(
+            bv_rgb, image_rgb, compare_method, 1 - compare_method
+        )
         if similarity_score > best_similarity_score:
             best_similarity_score = similarity_score
             best_block = bv_image.copy()
@@ -239,19 +298,28 @@ def generate_banner(image2_rgb, gen_big, use_pattern_items, compare_method):
     best_banner_copy = best_banner.copy()
 
     layer = 0
-    while last_best_similarity_score != best_similarity_score and (layer < 6 or gen_big):
+    while last_best_similarity_score != best_similarity_score and (
+        layer < 6 or gen_big
+    ):
         last_best_similarity_score = best_similarity_score
         layer += 1
         for bv in bvs:
-            if (bv.split('#')[0] in colors_in_img and not (biggest_color==bv.split('#')[0] and layer==1)) and bv.split('#')[1].split('_')[0] != "wall":
-                if use_pattern_items or not (bv.split('#')[1].split(".")[0] in pattern_items):
+            if (
+                bv.split("#")[0] in colors_in_img
+                and not (biggest_color == bv.split("#")[0] and layer == 1)
+            ) and bv.split("#")[1].split("_")[0] != "wall":
+                if use_pattern_items or not (
+                    bv.split("#")[1].split(".")[0] in pattern_items
+                ):
                     bv_image = Image.open(path + bv)
                     temp_banner = best_banner_copy.copy()
                     temp_banner.alpha_composite(bv_image, (0, 0))
                     bv_image.close()
 
-                    temp_banner_bv = np.array(temp_banner.convert('RGB'))
-                    similarity_score = hybrid_similarity(temp_banner_bv, image2_rgb, compare_method, 1-compare_method)
+                    temp_banner_bv = np.array(temp_banner.convert("RGB"))
+                    similarity_score = hybrid_similarity(
+                        temp_banner_bv, image2_rgb, compare_method, 1 - compare_method
+                    )
                     if similarity_score > best_similarity_score:
                         best_similarity_score = similarity_score
                         best_banner = temp_banner.copy()
@@ -270,18 +338,27 @@ def hybrid_similarity(img1_rgb, img2_rgb, w_delta, w_ssim):
     img2_rgb = np.asarray(img2_rgb, dtype=np.float32) / 255.0
 
     if img1_rgb.shape != img2_rgb.shape:
-        img2_rgb = cv2.resize(img2_rgb, (img1_rgb.shape[1], img1_rgb.shape[0]), interpolation=cv2.INTER_AREA)
+        img2_rgb = cv2.resize(
+            img2_rgb,
+            (img1_rgb.shape[1], img1_rgb.shape[0]),
+            interpolation=cv2.INTER_AREA,
+        )
 
     lab1 = rgb2lab(img1_rgb)
     lab2 = rgb2lab(img2_rgb)
 
-    lab1_ds = cv2.resize(lab1, (10,20), interpolation=cv2.INTER_AREA)
-    lab2_ds = cv2.resize(lab2, (10,20), interpolation=cv2.INTER_AREA)
+    lab1_ds = cv2.resize(lab1, (10, 20), interpolation=cv2.INTER_AREA)
+    lab2_ds = cv2.resize(lab2, (10, 20), interpolation=cv2.INTER_AREA)
     delta_e = deltaE_ciede2000(lab1_ds, lab2_ds)
     mean_de = np.mean(delta_e)
     delta_sim = 1 / (1 + mean_de)
 
-    ssim_val = ssim(cv2.cvtColor(img1_rgb, cv2.COLOR_RGB2GRAY), cv2.cvtColor(img2_rgb, cv2.COLOR_RGB2GRAY), data_range=1.0, win_size=3)
+    ssim_val = ssim(
+        cv2.cvtColor(img1_rgb, cv2.COLOR_RGB2GRAY),
+        cv2.cvtColor(img2_rgb, cv2.COLOR_RGB2GRAY),
+        data_range=1.0,
+        win_size=3,
+    )
 
     score = w_delta * delta_sim + w_ssim * ssim_val
 
@@ -292,12 +369,16 @@ def compare_main_second(main_img, second_img, img, compare_method):
     main_img_crop = main_img.crop((0, 3, 22, 47))
     second_img_crop = second_img.crop((0, 3, 22, 47))
 
-    main_img_rgb = np.array(main_img_crop.convert('RGB'))
-    second_img_rgb = np.array(second_img_crop.convert('RGB'))
-    img_rgb = np.array(img.convert('RGB'))
+    main_img_rgb = np.array(main_img_crop.convert("RGB"))
+    second_img_rgb = np.array(second_img_crop.convert("RGB"))
+    img_rgb = np.array(img.convert("RGB"))
 
-    main_similarity = hybrid_similarity(main_img_rgb, img_rgb, compare_method, 1-compare_method)
-    second_similarity = hybrid_similarity(second_img_rgb, img_rgb, compare_method, 1-compare_method)
+    main_similarity = hybrid_similarity(
+        main_img_rgb, img_rgb, compare_method, 1 - compare_method
+    )
+    second_similarity = hybrid_similarity(
+        second_img_rgb, img_rgb, compare_method, 1 - compare_method
+    )
 
     main_img_crop.close()
     second_img_crop.close()
@@ -320,10 +401,7 @@ def most_common_color(img_rgb, one_color, colors_set=None):
     color_names = np.array(list(colors_set.keys()))
     color_values = np.array(list(colors_set.values()))
 
-    dists = deltaE_ciede2000(
-        pixels[:, None, :],
-        color_values[None, :, :]
-    )
+    dists = deltaE_ciede2000(pixels[:, None, :], color_values[None, :, :])
 
     nearest = np.argmin(dists, axis=1)
 
@@ -332,8 +410,8 @@ def most_common_color(img_rgb, one_color, colors_set=None):
     if one_color:
         return color_names[np.argmax(counts)]
     else:
-        common_colors = color_names[np.where(counts>=0.05*counts.sum())]
-        if len(common_colors)==1:
+        common_colors = color_names[np.where(counts >= 0.05 * counts.sum())]
+        if len(common_colors) == 1:
             colors_set.pop(common_colors[0])
             second_color = most_common_color(img_rgb, True, colors_set)
             common_colors = np.append(common_colors, second_color)
